@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>魔方复原教学器 · 零基础分步教程</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --panel: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #dc2626;
+      --cube-bg: #0f172a;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* 顶部导航 */
+    .app-header {
+      background: var(--panel);
+      padding: 12px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      flex-shrink: 0;
+      object-fit: contain;
+      display: block;
+    }
+    .brand h1 { margin: 0; font-size: 20px; letter-spacing: -0.2px; }
+    .subtitle { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+    /* 主体布局 */
+    .app-main {
+      flex: 1;
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    /* 魔方区域 */
+    .cube-section {
+      flex: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      min-height: 0;
+      justify-content: center;
+    }
+    #canvas-container {
+      flex: 1 1 auto;
+      background: var(--cube-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      touch-action: none;
+    }
+    #canvas-container canvas { display: block; width: 100%; height: 100%; }
+    .cube-hint {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: rgba(15,23,42,0.75);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .controls-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 8px;
+      border-radius: 12px;
+      flex: 0 0 auto;
+    }
+    .controls-bar button {
+      border: none; border-radius: 8px;
+      padding: 10px 4px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: transform .1s, background .15s;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 4px;
+      min-height: 40px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls-bar button:hover { transform: translateY(-1px); }
+    .controls-bar button:active { transform: translateY(0); }
+    .controls-bar button.primary { background: var(--primary); color: #fff; }
+    .controls-bar button.primary:hover { background: var(--primary-dark); }
+    .controls-bar button.success { background: var(--success); color: #fff; }
+    .controls-bar button:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+    .move-status {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 2px 0 0;
+      transition: color .2s;
+      flex: 0 0 auto;
+    }
+    .move-status.active { color: #15803d; font-weight: 700; }
+    @media (max-width: 480px) {
+      .controls-bar { gap: 6px; padding: 6px; }
+      .controls-bar button { font-size: 11px; padding: 6px 2px; min-height: 34px; }
+      .move-status { font-size: 10px; }
+    }
+
+    /* 教学区域 */
+    .lesson-section {
+      flex: 1;
+      min-width: 320px;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .phase-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--panel);
+      padding: 10px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .phase-btn {
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+      transition: all .15s;
+    }
+    .phase-btn:hover { border-color: var(--primary); }
+    .phase-btn.active { border-color: #15803d; background: #15803d; color: #fff; font-weight: 600; }
+    .phase-btn.active .phase-summary { color: #fff; }
+    .phase-name { display: block; font-weight: 600; font-size: 12px; line-height: 1.3; }
+    .phase-summary { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+
+    .lesson-card {
+      flex: 1;
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .lesson-header { padding: 16px; border-bottom: 1px solid #e2e8f0; }
+    .phase-tag {
+      display: inline-block;
+      background: var(--primary-light); color: var(--primary-dark);
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+      margin-bottom: 6px; text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .lesson-header h2 { margin: 0; font-size: 18px; line-height: 1.35; }
+    .lesson-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .info-block { margin-bottom: 18px; }
+    .info-block:last-child { margin-bottom: 0; }
+    .info-block h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .info-block p, .info-block ul { margin: 0; font-size: 14px; line-height: 1.7; color: var(--text); }
+    .info-block ul { padding-left: 18px; }
+    .info-block li { margin-bottom: 6px; }
+    .info-block li:last-child { margin-bottom: 0; }
+    .judge-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .judge-box h3 { color: #92400e; }
+    .judge-box p { color: #78350f; }
+
+    #formula-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 34px; height: 34px;
+      padding: 0 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      font-family: "SF Mono", Consolas, "Courier New", monospace;
+      font-size: 14px; font-weight: 600;
+      transition: all .2s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip:hover { transform: translateY(-1px); }
+    .chip.pending { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+    .chip.current { background: #15803d; color: #fff; border-color: #15803d; transform: scale(1.08); box-shadow: 0 0 0 3px rgba(21,128,61,0.2); }
+    .chip.done { background: #dcfce7; color: #166534; border-color: #86efac; }
+
+    #basic-moves-panel { display: none; }
+    #basic-moves-panel.active { display: block; }
+    .basic-moves-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .basic-move-btn {
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: "SF Mono", Consolas, monospace;
+    }
+    .basic-move-btn:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+    .basic-move-btn:active { transform: scale(0.96); }
+    @media (max-width: 480px) {
+      .basic-moves-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .step-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .step-item {
+      padding: 9px 11px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all .15s;
+    }
+    .step-item:hover { border-color: var(--primary); }
+    .step-item.active { background: #15803d !important; border-color: #15803d !important; color: #fff !important; }
+    .step-item .check { display: none; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15,23,42,0.92);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 移动端适配 */
+    @media (max-width: 900px) {
+      .app-header { flex-direction: row; align-items: center; gap: 12px; padding: 10px 16px; }
+      .brand h1 { font-size: 17px; }
+      .subtitle { font-size: 11px; }
+      .app-main { flex-direction: column; overflow: hidden; padding: 10px; gap: 10px; }
+      .cube-section { flex: 1 1 45%; min-height: 0; max-height: 55vh; }
+      #canvas-container { min-height: 0; }
+      .lesson-section { flex: 1 1 50%; max-width: none; min-width: auto; min-height: 0; }
+    }
+    @media (max-width: 480px) {
+      .app-header { padding: 8px 12px; }
+      .logo { width: 32px; height: 32px; }
+      .brand h1 { font-size: 15px; }
+      .subtitle { font-size: 10px; }
+      .app-main { padding: 8px; gap: 8px; }
+      .cube-section { flex: 1 1 42%; gap: 6px; }
+      .controls-bar { gap: 5px; padding: 5px; border-radius: 8px; }
+      .controls-bar button { padding: 6px 2px; font-size: 11px; min-height: 32px; }
+      .phase-nav { grid-template-columns: repeat(4, 1fr); padding: 6px; }
+      .phase-btn { padding: 5px 2px; font-size: 10px; }
+      .phase-name { font-size: 10px; }
+      .phase-summary { font-size: 9px; }
+      .lesson-header { padding: 10px 12px; }
+      .lesson-header h2 { font-size: 14px; }
+      .lesson-body { padding: 10px 12px; }
+      .info-block p, .info-block ul { font-size: 13px; }
+      .move-status { font-size: 10px; }
+    }
+    @media (max-height: 700px) and (max-width: 900px) {
+      .cube-section { flex: 1 1 40%; }
+      .lesson-section { flex: 1 1 55%; }
+      .controls-bar button { min-height: 30px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="brand">
+        <img class="logo" src="assets/logo-80.png" alt="魔方教学器" width="40" height="40">
+        <div>
+          <h1>魔方复原教学器</h1>
+          <p class="subtitle">跟着 6 个公式，零基础还原三阶魔方</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="cube-section">
+        <div id="canvas-container">
+          <div class="cube-hint">拖动旋转视角 · 滚轮缩放 · 🔃 翻转可看底面</div>
+        </div>
+        <div class="controls-bar">
+          <button id="btn-prev-step" title="上一教学步骤">← 上一步</button>
+          <button id="btn-play" class="primary" title="播放/暂停">▶ 播放</button>
+          <button id="btn-next-step" title="下一教学步骤">下一步 →</button>
+          <button id="btn-auto" title="自动连续播放">⟲ 自动</button>
+          <button id="btn-reset" title="重置本步">↺ 重置</button>
+          <button id="btn-flip" title="翻转视角看底面">🔃 翻转</button>
+          <button id="btn-prev-move" title="公式后退一步">◀ 步退</button>
+          <button id="btn-next-move" title="公式前进一步">步进 ▶</button>
+        </div>
+        <div class="move-status" id="move-indicator">公式 0 / 0</div>
+      </section>
+
+      <aside class="lesson-section">
+        <nav class="phase-nav" id="phase-nav" aria-label="阶段导航"></nav>
+
+        <article class="lesson-card">
+          <header class="lesson-header">
+            <span class="phase-tag" id="phase-tag">阶段 1</span>
+            <h2 id="step-title">认识魔方与转动符号</h2>
+          </header>
+          <div class="lesson-body">
+            <div class="info-block">
+              <h3>🎯 目标</h3>
+              <p id="step-goal">…</p>
+            </div>
+            <div class="info-block">
+              <h3>🔍 场景</h3>
+              <p id="step-scene">…</p>
+            </div>
+            <div class="info-block judge-box" id="judge-block">
+              <h3>🧐 观察判断</h3>
+              <p id="step-judge">…</p>
+            </div>
+            <div class="info-block">
+              <h3>📝 本步公式</h3>
+              <div id="formula-chips"></div>
+            </div>
+            <div class="info-block" id="basic-moves-panel">
+              <h3>🎮 12 种基本转法</h3>
+              <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">点击按钮，魔方会重置并单独演示该转法。</p>
+              <div class="basic-moves-grid" id="basic-moves-grid"></div>
+            </div>
+            <div class="info-block">
+              <h3>💡 分步讲解</h3>
+              <ul id="step-tips"></ul>
+            </div>
+            <div class="info-block" id="step-list-block">
+              <h3>📋 当前阶段步骤</h3>
+              <div class="step-list" id="step-list"></div>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="three.min.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ============================================================
+       * 一、配置与工具函数
+       * ============================================================ */
+      const COLORS = {
+        U: 0xffffff, // 上 - 白
+        D: 0xffd500, // 下 - 黄
+        L: 0xff8800, // 左 - 橙
+        R: 0xff0000, // 右 - 红
+        F: 0x00d000, // 前 - 绿
+        B: 0x0066ff, // 后 - 蓝
+        core: 0x111111
+      };
+      const FACE_NAMES = { U: '上', D: '下', L: '左', R: '右', F: '前', B: '后' };
+      // 标准魔方记号对应的 Three.js 旋转方向
+      const DIR = { R: -1, L: 1, U: -1, D: 1, F: -1, B: 1 };
+      const AXIS = { R: [1, 0, 0], L: [1, 0, 0], U: [0, 1, 0], D: [0, 1, 0], F: [0, 0, 1], B: [0, 0, 1] };
+
+      function parseMoves(str) {
+        if (!str || !str.trim()) return [];
+        const out = [];
+        const re = /([UDLRFB])(['2])?/g;
+        let m;
+        while ((m = re.exec(str)) !== null) {
+          const face = m[1];
+          const suffix = m[2] || '';
+          let dir = 1, steps = 1;
+          if (suffix === "'") dir = -1;
+          else if (suffix === '2') steps = 2;
+          out.push({ face, dir, steps, text: face + suffix });
+        }
+        return out;
+      }
+
+      function formatMove(m) {
+        if (m.steps === 2) return m.face + ' ' + m.face;
+        return m.face + (m.dir === -1 ? "'" : '');
+      }
+
+      function inverseMoves(str) {
+        return parseMoves(str).reverse().map(m => {
+          if (m.steps === 2) return m.face + ' ' + m.face;
+          return m.face + (m.dir === 1 ? "'" : '');
+        }).join(' ');
+      }
+
+      /* ============================================================
+       * 二、教学数据
+       * ============================================================
+       * 手动高亮标注说明（开发协作用）：
+       *   如需调整某一步的高亮色块，请修改对应 STEPS[i].highlight 字段。
+       *   颜色编码：U(白) D(黄) L(橙) R(红) F(绿) B(蓝)。
+       *   例如要高亮「白绿红角块」，则写 highlight: { type:'colors', colors:['D','F','R'] }。
+       *   渲染时会只保留这些关键色块为原色，其余块统一灰显，以突出教学重点。
+       * ============================================================ */
+      const PHASES = [
+        { id: 1, name: '公式基础', summary: '认识 6 面 12 种转法' },
+        { id: 2, name: '底部十字', summary: '白色十字归位' },
+        { id: 3, name: '底部边角', summary: '第一层角块归位' },
+        { id: 4, name: '中间边角', summary: '第二层棱块归位' },
+        { id: 5, name: '顶部十字', summary: '黄色十字出现' },
+        { id: 6, name: '顶部边角', summary: '黄色角块归位' },
+        { id: 7, name: '顶棱归位', summary: '顶层棱块归位' },
+        { id: 8, name: '顶角归位', summary: '魔方完全复原' }
+      ];
+
+      const STEPS = [
+        {
+          id: '1-0', phase: 1,
+          title: '认识魔方与转动符号',
+          goal: '理解魔方的 6 个面和 12 种基本转法，为后续学习打好基础。',
+          scene: '魔方有 6 个面：上(U)白、下(D)黄、左(L)橙、右(R)红、前(F)绿、后(B)蓝。每个面都可以顺时针或逆时针旋转 90°。',
+          setup: "", moves: "",
+          judge: '先记住符号规则：<br>• 单个字母如 R 表示该面顺时针转 90°（正对那个面看）<br>• 带撇号如 R′ 表示逆时针转 90°<br>• 两个相同字母如 R R 表示转 180°',
+          tips: ['U/D/L/R/F/B 分别代表上下左右前后 6 个面', '带 ′ 表示逆时针，如 R′ 就是右面逆时针转 90°', '两个相同字母表示转 180°，如 U U 就是顶层转半圈', '顺时针/逆时针以「正对该面看」为准'],
+          highlight: { type: 'all' }
+        },
+        {
+          id: '2-0', phase: 2,
+          title: '底部十字 · 梅花法一：白棱在侧面中层',
+          goal: '在底面（白色面）拼出一个白色十字，并让白色棱块的侧面颜色与侧面中心对齐。',
+          scene: '白色棱块当前位于侧面中层。先把白棱翻到顶层，再旋转顶层对齐中心，最后 180° 翻回底层。',
+          setup: "R' R' U R U' R'", moves: "R U R' U' R R",
+          judge: '观察白色棱块的位置，分三步：<br>1. 若白色棱块在侧面中层，先把它转到顶层；<br>2. 在顶层旋转(U)，让白色棱块的侧面颜色与下面中心块颜色对齐；<br>3. 再转动该侧面 180°，把白色翻到下面。',
+          tips: ['R：把侧面中层的白棱翻到顶层', 'U：顶层旋转，让白棱侧面颜色对准中心', 'R R：最后把白棱 180° 翻回底层，完成归位'],
+          highlight:{
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '2-1', phase: 2,
+          title: '底部十字 · 梅花法二：白棱在顶层朝上',
+          goal: '在底面（白色面）拼出一个白色十字，并让白色棱块的侧面颜色与侧面中心对齐。',
+          scene: '白色棱块已经在顶层，且白色面朝上。只需旋转顶层让侧面颜色对齐中心，再翻 180° 即可。',
+          setup: "F F U", moves: "U' F F",
+          judge: '当白色棱块在顶层且白色朝上时：<br>1. 旋转顶层(U/U′)，让该棱块的侧面颜色与下面中心对齐；<br>2. 转动该侧面 180°，直接把白色翻到下面。',
+          tips: ['U′：调整顶层，让白棱侧面颜色对准前面绿色中心', 'F F：前面转 180°，把白棱翻到底层'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '2-2', phase: 2,
+          title: '底部十字 · 梅花法三：白棱在底层方向不对',
+          goal: '在底面（白色面）拼出一个白色十字，并让白色棱块的侧面颜色与侧面中心对齐。',
+          scene: '白色棱块已经在底层，但白色没有朝下、方向不对。需要把它重新翻出到顶层，调整后再归位。',
+          setup: "F F U F F", moves: "F F U' F F",
+          judge: '当白色棱块在底层但方向不对时：<br>1. 先转动该侧面 180°，把白棱翻到顶层；<br>2. 旋转顶层(U/U′)调整位置；<br>3. 再转动该侧面 180°，把白棱正确翻回底层。',
+          tips: ['F F：先把底层方向不对的白棱翻到顶层', 'U′：调整顶层位置', 'F F：再次翻回底层，让白色朝下'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '3-0', phase: 3,
+          title: '白色角块 · 右前角归位',
+          goal: '在保持底部十字完整的前提下，把右前顶角的白色角块归位。',
+          scene: '目标角块被暂时移到了下层，白色十字仍保持完整。本步通过右面角块换位公式把它放回右前顶角。',
+          setup: "R' D' R U R' D R U'", moves: "U R' D' R U' R' D R",
+          judge: '观察右前顶角的白色角块位置：<br>• 若目标角块在下层右侧 → 用公式 U R′ D′ R U′ R′ D R 把它带回顶层<br>• 整个过程中白色十字不会被破坏。',
+          tips: ['U：顶层转动，为角块归位创造空间', 'R′ D′ R：把下层角块提到顶层', 'U′：顶层回转', 'R′ D R：角块落位，十字保持完整'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" },
+				{ "type": "color", "colors": ["U"], "piece": "corner" }
+						]
+			}
+        },
+        {
+          id: '3-1', phase: 3,
+          title: '白色角块 · 左前角归位',
+          goal: '在保持底部十字完整的前提下，把左前顶角的白色角块归位。',
+          scene: '目标角块被暂时移到了下层，白色十字仍保持完整。本步是 3-0 的镜像，通过左面角块换位公式完成归位。',
+          setup: "L D L' U' L D' L' U", moves: "U' L D L' U L D' L'",
+          judge: '观察左前顶角的白色角块位置：<br>• 若目标角块在下层左侧 → 用公式 U′ L D L′ U L D′ L′ 把它带回顶层<br>• 与右前角公式互为镜像，核心思路相同。',
+          tips: ['U′：顶层转动', 'L D L′：把下层角块提到顶层', 'U：顶层回转', 'L D′ L′：角块落位，十字保持完整'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" },
+				{ "type": "color", "colors": ["U"], "piece": "corner" }
+						]
+			}
+        },
+        {
+          id: '3-2', phase: 3,
+          title: '白色角块 · 前顶角归位',
+          goal: '在保持底部十字完整的前提下，把前顶角的白色角块归位。',
+          scene: '目标角块被暂时移到了下层，白色十字仍保持完整。本步通过前面角块换位公式完成归位。',
+          setup: "F' D' F U F' D F U'", moves: "U F' D' F U' F' D F",
+          judge: '观察前顶角的白色角块位置：<br>• 若目标角块在下层前侧 → 用公式 U F′ D′ F U′ F′ D F 把它带回顶层<br>• 右/左/前三个角块公式共同覆盖第一层的不同位置。',
+          tips: ['U：顶层转动', 'F′ D′ F：把下层角块提到顶层', 'U′：顶层回转', 'F′ D F：角块落位，十字保持完整'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" },
+				{ "type": "color", "colors": ["U"], "piece": "corner" }
+						]
+			}
+        },
+        {
+          id: '4-0', phase: 4,
+          title: '中层棱块 · 蓝红棱右移',
+          goal: '把绿红棱块放进中层前右位：绿色朝前、红色朝右。',
+          scene: '目标棱块在顶层，它的顶面颜色在右侧，用右移公式送它下去。',
+          setup: inverseMoves("U R U' R' U' F' U F"), moves: "U R U' R' U' F' U F",
+          judge: '观察目标棱块顶面颜色的朝向：<br>• 若顶色在右侧 → 用公式 U R U′ R′ U′ F′ U F<br>• 若顶色在左侧 → 用公式 U′ L′ U L U F U′ F′<br>选择公式前，先旋转顶层让目标棱块的侧面颜色与对应中心对齐。',
+          tips: ['U：把目标棱块从前面转到右面，让出空间', 'R：右面顺时针转', 'U′：顶层回转', 'R′：右面回转', 'U′：顶层再转', 'F′：前面回转', 'U：顶层转回', 'F：前面转回——棱块进入中层'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" },
+				{ "type": "color", "colors": ["U"], "piece": "corner" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '4-1', phase: 4,
+          title: '中层棱块 · 橙蓝棱左移',
+          goal: '把橙蓝棱块放进中层后右位：蓝色朝后、橙色朝右。',
+          scene: '目标棱块在顶层，它的顶面颜色在左侧，用左移公式送它下去。',
+          setup: inverseMoves("U' L' U L U F U' F'"), moves: "U' L' U L U F U' F'",
+          judge: '观察目标棱块顶面颜色的朝向：<br>• 若顶色在左侧 → 用公式 U′ L′ U L U F U′ F′<br>• 若顶色在右侧 → 用公式 U R U′ R′ U′ F′ U F<br>若顶层找不到目标棱块，它可能已经在中层但位置不对，此时用任一公式把它换到顶层再来。',
+          tips: ['U′：把目标棱块从前面转到左面', 'L′：左面逆时针转', 'U：顶层转回', 'L：左面转回', 'U：顶层再转', 'F：前面顺时针转', 'U′：顶层回转', 'F′：前面回转——棱块进入中层'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },
+				{ "type": "color", "colors": ["U"], "piece": "edge" },
+				{ "type": "color", "colors": ["U"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '5-0', phase: 5,
+          title: '黄色十字 · 小黄点',
+          goal: '让黄色面出现十字（只看黄色棱块，不管角块）。',
+          scene: '把魔方翻转，让黄色面朝上。此时顶面四个黄色棱块一个都不在顶层，只有中心是黄色——这是真·小黄点。',
+          setup: inverseMoves("R U U R' R' F R F' U U R' F R F'"), moves: "F R U R' U' F'",
+          judge: '把魔方翻转，让黄色面朝上，只看黄色棱块：<br>• 小黄点（顶面四个棱块都看不到黄色）→ 做公式 F R U R′ U′ F′（与「一字马」完全相同），黄色棱块会增多、向十字靠近；<br>• 接着进入 5-1「一字马」，把出现的黄色条横放（朝左朝右），再做一次同一公式，即得完整黄色十字。',
+          tips: ['F R U R′ U′ F′ 与「一字马」完全一致', '做一次后黄色棱块增多（比小黄点进了一步）', '把出现的黄色条横放（朝左朝右）', '进入 5-1 用同一公式做成黄色十字'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '5-1', phase: 5,
+          title: '黄色十字 · 一字马',
+          goal: '让黄色面出现十字（只看黄色棱块，不管角块）。',
+          scene: '把魔方翻转，让黄色面朝上。此时顶面黄色棱块排成一条横线。',
+          setup: inverseMoves("F R U R' U' F'"), moves: "F R U R' U' F'",
+          judge: '把魔方翻转，让黄色面朝上。只看黄色棱块：<br>• 一字马（中间一横是黄）→ 把这条横线横着朝左右放，做公式 F R U R′ U′ F′，会变成小拐角或十字；<br>• 若还没出十字，继续下一步。',
+          tips: ['先把一字马横放（让黄色横线朝左朝右）', 'F R U R′ U′ F′：把一字马翻成小拐角或直接十字'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '5-2', phase: 5,
+          title: '黄色十字 · 小拐角',
+          goal: '让黄色面出现十字（只看黄色棱块，不管角块）。',
+          scene: '把魔方翻转，让黄色面朝上。此时顶面黄色棱块呈 L 形小拐角。',
+          setup: inverseMoves("F U R U' R' F'"), moves: "F U R U' R' F'",
+          judge: '把魔方翻转，让黄色面朝上。只看黄色棱块：<br>• 小拐角（L 形黄）→ 把 L 的开口朝向左后方，做公式 F U R U′ R′ F′，直接得到黄色十字。',
+          tips: ['L 形开口朝左后方', 'F：前面顺时针转', 'U：顶层顺时针转', 'R：右面顺时针转', 'U′：顶层回转', 'R′：右面回转', 'F′：前面回转——得到十字'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '6-0', phase: 6,
+          title: '黄色角块 · 一个黄角朝上（右手小鱼）',
+          goal: '让四个黄色角块都朝上，顶面全黄。',
+          scene: '把魔方翻转，让黄色面朝上。此时顶层只有 1 个角块黄色朝上，像鱼头，把鱼头朝向右前方。',
+          setup: inverseMoves("R U R' U R U U R'"), moves: "R U R' U R U U R'",
+          judge: '把魔方翻转，让黄色面朝上。数顶层有几个角块黄色朝上：<br>• 若只有 1 个黄角朝上 → 让鱼头朝右前方（黄色块在右前角上面），做右手小鱼 R U R′ U R U U R′，顶面直接全黄；<br>• 若不是 1 个，先做一遍本公式，把状态转成 1 个黄角朝上，再做一次。',
+          tips: ['R：右面顺时针转', 'U：顶层顺时针转', 'R′：右面回转', 'U：顶层再转', 'R：右面再转', 'U U：顶层转半圈', 'R′：右面回转'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '6-3', phase: 6,
+          title: '黄色角块 · 一个黄角朝上（左手小鱼）',
+          goal: '用左手小鱼处理鱼头朝左前方的情况（接续 6-1 得到的左手小鱼）。',
+          scene: '把魔方翻转，让黄色面朝上。从「车头灯」做一次右手小鱼后，会变成一个黄角朝上的左手小鱼，鱼头朝左前方，用左手小鱼收尾。',
+          setup: inverseMoves("R U R' U R U U R'") + ' ' + inverseMoves("R U R' U R U U R'") + ' ' + "R U U R R U' R R U' R R U U R" + ' ' + "R U R' U R U U R'", moves: "L' U' L U' L' U U L",
+          judge: '把魔方翻转，让黄色面朝上。若只剩 1 个黄角且黄色块在左前角上面（鱼头朝左前），用左手小鱼 L′ U′ L U′ L′ U U L，一次即可全黄。<br>本质上左手小鱼是右手小鱼的镜像，二者选其一熟练即可。',
+          tips: ['L′：左面逆时针转', 'U′：顶层回转', 'L：左面转回', 'U′：顶层再回转', 'L′：左面再转', 'U U：顶层转半圈', 'L：左面转回'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '6-1', phase: 6,
+          title: '黄色角块 · 两个黄角朝上（车头灯）',
+          goal: '让四个黄色角块都朝上，顶面全黄。',
+          scene: '把魔方翻转，让黄色面朝上。此时顶层有 2 个角块黄色朝上，且它们相邻——像一对「车头灯」。',
+          setup: inverseMoves("R U R' U R U U R'") + ' ' + inverseMoves("R U R' U R U U R'") + ' ' + "R U U R R U' R R U' R R U U R", moves: "R U R' U R U U R'",
+          judge: '把魔方翻转，让黄色面朝上。看顶层黄角数量：<br>• 恰好 2 个黄角相邻（车头灯）→ 把这对同色黄角放到左后方，做一次右手小鱼 R U R′ U R U U R′，会变成「1 个黄角朝上」；<br>• 随后按 6-0（或 6-3）用一次小鱼即可全黄。',
+          tips: ['本步起点是「车头灯」：两个相邻黄角', '做一次右手小鱼 R U R′ U R U U R′', '结果会变成 1 个黄角朝上，接力给 6-0 / 6-3'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '6-2', phase: 6,
+          title: '黄色角块 · 没有黄角朝上（仅十字）',
+          goal: '让四个黄色角块都朝上，顶面全黄。',
+          scene: '把魔方翻转，让黄色面朝上。此时黄色十字已经完整，但 4 个角块都没有黄色朝上（0 个黄角）。',
+          setup: inverseMoves("R U R' U R U U R'") + ' ' + inverseMoves("R U R' U R U U R'"), moves: "R U R' U R U U R'",
+          judge: '把魔方翻转，让黄色面朝上。看顶层黄角数量：<br>• 0 个黄角朝上（只有黄色十字）→ 任意方向做右手小鱼 R U R′ U R U U R′，会得到 1 个黄角朝上（鱼头朝右前方）；<br>• 随后按 6-0（右手小鱼）再做一次，即可让顶面全黄。',
+          tips: ['本步起点是「仅黄色十字、0 个黄角」', '做右手小鱼 R U R′ U R U U R′（与 6-0 完全相同）', '结果变成 1 个黄角朝上（右手小鱼形状）', '接力给 6-0 再用一次小鱼，顶面全黄'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "face-color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '7-0', phase: 7,
+          title: '顶棱归位 · 顺时针三循环',
+          goal: '还原顶层 4 个棱块：让每个棱块的侧面颜色与对应面中心块颜色一致，过程中不破坏已完成的黄面。',
+          scene: '把魔方翻转，让黄色面朝上。旋转顶层(U)，找到一个侧面颜色已与中心块对齐的棱块（清一色边）。',
+          setup: inverseMoves("R U' R U R U R U' R' U' R R"), moves: "R U' R U R U R U' R' U' R R",
+          judge: '把魔方翻转，让黄色面朝上。旋转顶层(U)，让那个正确的棱块位于后面(B 面)。观察剩下 3 个棱块需要移动的方向：<br>• 顺时针三循环 → 用本公式；<br>• 逆时针三循环 →用下一个公司；<br>• 若旋转顶层找不到任何对齐棱（4 个全错，复杂态）→ 任意方向先做一遍本公式，必定出现 1 个对齐棱，再按上面处理；<br>• 若 4 个棱块都已对齐 → 直接跳过本阶段。',
+          tips: ['主公式 R U′ R U R U R U′ R′ U′ R R 为顺时针三循环', '先把正确的棱块转到后面(B 面)', '顺/逆方向分不清时，任选其一做，最多 2 次即可全归位'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '7-1', phase: 7,
+          title: '顶棱归位 · 逆时针三循环',
+          goal: '还原顶层 4 个棱块：当剩下 3 个棱块需要逆时针三循环时使用本公式（主公式的镜像）。',
+          scene: '把魔方翻转，让黄色面朝上。把正确的棱块放到后面(B 面)后，剩下 3 个棱块需要逆时针轮换时使用本公式。',
+          setup: inverseMoves("R R U R U R' U' R' U' R' U R'"), moves: "R R U R U R' U' R' U' R' U R'",
+          judge: '把魔方翻转，让黄色面朝上。旋转顶层(U) 把正确棱块放后面(B 面)。若观察剩下 3 个棱块是逆时针轮换 → 做镜像公式 R R U R U R′ U′ R′ U′ R′ U R′。<br>顺时针与逆时针分不清时，任选其中一个做，最多做两次就能复原。',
+          tips: ['镜像公式 R R U R U R′ U′ R′ U′ R′ U R′ 为主公式的逆时针版本', '方向判断：主公式顺时针、镜像逆时针', '二者择一，最多 2 次全归位'],
+          highlight: {
+			"type": "union",
+			"rules": [
+				{ "type": "color", "colors": ["U", "D", "L", "R", "F", "B"], "piece": "center" },//中心
+				{ "type": "color", "colors": ["U"], "piece": "edge" },//白棱
+				{ "type": "color", "colors": ["U"], "piece": "corner" },//白角
+				{ "type": "color", "colors": ["D"], "piece": "edge" },//黄棱
+				{ "type": "face-colors", "colors": ["D"], "piece": "corner" },
+				{ "type": "colors", "colors": ["L", "B"], "piece": "edge" },
+				{ "type": "colors", "colors": ["L", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "F"], "piece": "edge" },
+				{ "type": "colors", "colors": ["R", "B"], "piece": "edge" }
+						]
+			}
+        },
+        {
+          id: '8-0', phase: 8,
+          title: '顶角归位 ',
+          goal: '最后还原顶层角块，复原魔方。',
+          scene: '把魔方翻转，让黄色面朝上。顶层棱块已归位，旋转顶层(U) 找一个「车头灯」——相邻两角块在接触边上的颜色相同。',
+          setup: inverseMoves("R' F R' B B R F' R' B B R R"), moves: "R' F R' B B R F' R' B B R R",
+          judge: '把魔方翻转，让黄色面朝上。旋转顶层(U) 寻找「车头灯」（相邻两角侧面颜色相同）：<br>• 找到车头灯 → 整体转动魔方，把这一面对准后面(B 面，示例为绿色)，做公式 角块即归位；<br>• 找不到车头灯（4 面全错，复杂态）→ 任意方向先做一遍本公式，必定出现一组车头灯，再按上面处理；<br>• 4 个角块都已正确 → 直接转动顶层(U) 复原魔方。',
+          tips: ['R′：右面逆时针转', 'F：前面顺时针转', 'R′：右面再逆时针', 'B B：后面转 180°', 'R：右面顺时针转', 'F′：前面逆时针', 'R′：右面再逆时针', 'B B：后面再转 180°', 'R R：右面转 180°', '找不到车头灯时先做一遍必出现，最多 2 次全归位'],
+          highlight: { "type": "all" }
+        }
+      ];
+
+      const BASIC_MOVES = [
+        { face: 'U', dir: 1, steps: 1, label: 'U', desc: '上顺' },
+        { face: 'U', dir: -1, steps: 1, label: "U'", desc: '上逆' },
+        { face: 'D', dir: 1, steps: 1, label: 'D', desc: '下顺' },
+        { face: 'D', dir: -1, steps: 1, label: "D'", desc: '下逆' },
+        { face: 'L', dir: 1, steps: 1, label: 'L', desc: '左顺' },
+        { face: 'L', dir: -1, steps: 1, label: "L'", desc: '左逆' },
+        { face: 'R', dir: 1, steps: 1, label: 'R', desc: '右顺' },
+        { face: 'R', dir: -1, steps: 1, label: "R'", desc: '右逆' },
+        { face: 'F', dir: 1, steps: 1, label: 'F', desc: '前顺' },
+        { face: 'F', dir: -1, steps: 1, label: "F'", desc: '前逆' },
+        { face: 'B', dir: 1, steps: 1, label: 'B', desc: '后顺' },
+        { face: 'B', dir: -1, steps: 1, label: "B'", desc: '后逆' }
+      ];
+
+      /* ============================================================
+       * 三、简易轨道控制器（不依赖 OrbitControls）
+       * ============================================================ */
+      function SimpleOrbitControls(camera, domElement) {
+        this.camera = camera;
+        this.dom = domElement;
+        this.minDistance = 4;
+        this.maxDistance = 16;
+        this.target = new THREE.Vector3(0, 0, 0);
+        this.spherical = new THREE.Spherical().setFromVector3(camera.position);
+        this.isDown = false;
+        this.lastX = 0;
+        this.lastY = 0;
+        this.init();
+      }
+      SimpleOrbitControls.prototype.init = function () {
+        const self = this;
+        this.dom.addEventListener('mousedown', function (e) {
+          self.isDown = true;
+          self.lastX = e.clientX;
+          self.lastY = e.clientY;
+        });
+        window.addEventListener('mousemove', function (e) {
+          if (!self.isDown) return;
+          const dx = e.clientX - self.lastX;
+          const dy = e.clientY - self.lastY;
+          self.lastX = e.clientX;
+          self.lastY = e.clientY;
+          self.spherical.theta -= dx * 0.008;
+          self.spherical.phi -= dy * 0.008;
+          self.spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, self.spherical.phi));
+          self.update();
+        });
+        window.addEventListener('mouseup', function () { self.isDown = false; });
+        this.dom.addEventListener('wheel', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          self.spherical.radius *= e.deltaY > 0 ? 1.1 : 0.9;
+          self.spherical.radius = Math.max(self.minDistance, Math.min(self.maxDistance, self.spherical.radius));
+          self.update();
+        }, { passive: false });
+        this.dom.addEventListener('touchstart', function (e) {
+          if (e.touches.length === 1) {
+            self.isDown = true;
+            self.lastX = e.touches[0].clientX;
+            self.lastY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+        this.dom.addEventListener('touchmove', function (e) {
+          if (!self.isDown || e.touches.length !== 1) return;
+          const dx = e.touches[0].clientX - self.lastX;
+          const dy = e.touches[0].clientY - self.lastY;
+          self.lastX = e.touches[0].clientX;
+          self.lastY = e.touches[0].clientY;
+          self.spherical.theta -= dx * 0.01;
+          self.spherical.phi -= dy * 0.01;
+          self.spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, self.spherical.phi));
+          self.update();
+        }, { passive: true });
+        this.dom.addEventListener('touchend', function () { self.isDown = false; });
+      };
+      SimpleOrbitControls.prototype.update = function () {
+        this.camera.position.setFromSpherical(this.spherical);
+        this.camera.lookAt(this.target);
+      };
+
+      /* ============================================================
+       * 四、3D 魔方核心
+       * ============================================================ */
+      class Cube3D {
+        constructor(container) {
+          this.container = container;
+          this.scene = new THREE.Scene();
+          this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+          this.defaultCameraPos = new THREE.Vector3(5.5, 4.2, 6.5);
+          this.camera.position.copy(this.defaultCameraPos);
+          this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          this.renderer.shadowMap.enabled = true;
+          this.container.appendChild(this.renderer.domElement);
+
+          this.controls = new SimpleOrbitControls(this.camera, this.renderer.domElement);
+          this.animating = false;
+
+          this.addLights();
+          this.createCubies();
+          this.reset();
+          this.animate();
+
+          // 延迟到布局完成后再设置尺寸，避免容器尚未撑开导致魔方偏移
+          requestAnimationFrame(() => this.resize());
+          window.addEventListener('resize', () => this.resize());
+          // 窗口加载完成后再次校准尺寸
+          window.addEventListener('load', () => this.resize());
+        }
+
+        resetCamera() {
+          this.camera.position.copy(this.defaultCameraPos);
+          this.controls.spherical.setFromVector3(this.defaultCameraPos);
+          this.controls.target.set(0, 0, 0);
+          this.controls.update();
+          this.resize();
+        }
+
+        addLights() {
+          const ambient = new THREE.AmbientLight(0xffffff, 0.75);
+          this.scene.add(ambient);
+          const dir = new THREE.DirectionalLight(0xffffff, 0.55);
+          dir.position.set(5, 10, 7);
+          dir.castShadow = true;
+          dir.shadow.mapSize.set(1024, 1024);
+          this.scene.add(dir);
+          const fill = new THREE.DirectionalLight(0xffffff, 0.25);
+          fill.position.set(-5, 0, -5);
+          this.scene.add(fill);
+        }
+
+        createCubies() {
+          this.cubies = [];
+          const geometry = new THREE.BoxGeometry(0.94, 0.94, 0.94);
+          const mat = (color) => new THREE.MeshStandardMaterial({
+            color: color, roughness: 0.35, metalness: 0.05
+          });
+          const faceMats = {
+            '+x': mat(COLORS.R), '-x': mat(COLORS.L),
+            '+y': mat(COLORS.U), '-y': mat(COLORS.D),
+            '+z': mat(COLORS.F), '-z': mat(COLORS.B)
+          };
+          const coreMat = mat(COLORS.core);
+          // BoxGeometry 材质顺序：右(+x)、左(-x)、上(+y)、下(-y)、前(+z)、后(-z)
+          const order = ['+x', '-x', '+y', '-y', '+z', '-z'];
+          // 每个面的颜色名，用于高亮策略匹配
+          const orderColor = ['R', 'L', 'U', 'D', 'F', 'B'];
+
+          for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+              for (let z = -1; z <= 1; z++) {
+                if (x === 0 && y === 0 && z === 0) continue;
+                const faceColors = [];
+                const materials = order.map((dir, idx) => {
+                  const isOuter =
+                    (dir === '+x' && x === 1) || (dir === '-x' && x === -1) ||
+                    (dir === '+y' && y === 1) || (dir === '-y' && y === -1) ||
+                    (dir === '+z' && z === 1) || (dir === '-z' && z === -1);
+                  faceColors.push(isOuter ? orderColor[idx] : 'core');
+                  return isOuter ? faceMats[dir] : coreMat;
+                });
+                const mesh = new THREE.Mesh(geometry, materials);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                this.scene.add(mesh);
+                this.cubies.push({
+                  id: `${x},${y},${z}`,
+                  ox: x, oy: y, oz: z,
+                  x: x, y: y, z: z,
+                  q: new THREE.Quaternion(),
+                  mesh,
+                  originalMats: materials,
+                  faceColors,
+                  fc: faceColors.slice()
+                });
+              }
+            }
+          }
+        }
+
+        reset() {
+          for (const c of this.cubies) {
+            c.x = c.ox; c.y = c.oy; c.z = c.oz;
+            c.q.identity();
+            c.fc = c.faceColors.slice();
+            this.updateMesh(c);
+            c.mesh.material = c.originalMats;
+          }
+        }
+
+        // 整体重定向魔方：把所有 cubie 绕指定世界轴旋转指定角度
+        reorient(axis, angle) {
+          const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+          for (const c of this.cubies) {
+            const v = new THREE.Vector3(c.x, c.y, c.z).applyQuaternion(q);
+            c.x = Math.round(v.x); c.y = Math.round(v.y); c.z = Math.round(v.z);
+            c.q.premultiply(q);
+            c.fc = this.rotateFaceColorsWorld(c.fc || c.faceColors, axis, angle);
+            this.updateMesh(c);
+          }
+        }
+
+        rotateFaceColorsWorld(fc, axis, angle) {
+          const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+          const dirs = { 'R': [1, 0, 0], 'L': [-1, 0, 0], 'U': [0, 1, 0], 'D': [0, -1, 0], 'F': [0, 0, 1], 'B': [0, 0, -1] };
+          const order = ['R', 'L', 'U', 'D', 'F', 'B'];
+          const result = new Array(6).fill('core');
+          for (let i = 0; i < 6; i++) {
+            const f = fc[i];
+            if (f === 'core') continue;
+            // 原方向 i 的颜色 f，整体旋转后指向新的方向 v
+            const v = new THREE.Vector3(...dirs[order[i]]).applyQuaternion(q);
+            for (let j = 0; j < 6; j++) {
+              const d = dirs[order[j]];
+              if (Math.round(v.x) === d[0] && Math.round(v.y) === d[1] && Math.round(v.z) === d[2]) {
+                result[j] = f;
+                break;
+              }
+            }
+          }
+          return result;
+        }
+
+        updateMesh(c) {
+          c.mesh.position.set(c.x, c.y, c.z);
+          c.mesh.quaternion.copy(c.q);
+        }
+
+        // 高亮指定 id 的 cubie，其余变灰；ids 为空则全部原色。
+        // 如果传入 faceMap，则只高亮每个 cubie 中指定索引的面，其余面灰色。
+        // faceMap 格式：{ 'x,y,z': Set<faceIndex>, ... }
+        setHighlight(ids, faceMap) {
+          const grayMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5 });
+          const grayMats = [grayMat, grayMat, grayMat, grayMat, grayMat, grayMat];
+          const activeSet = new Set(ids || []);
+          const fm = faceMap || {};
+          const hasFaceMap = Object.keys(fm).length > 0;
+          for (const c of this.cubies) {
+            if (activeSet.size === 0 && !hasFaceMap) {
+              // 全部原色
+              c.mesh.material = c.originalMats;
+            } else if (fm[c.id]) {
+              // 该 cubie 需要按面高亮
+              c.mesh.material = c.originalMats.map((mat, i) => fm[c.id].has(i) ? mat : grayMat);
+            } else if (activeSet.has(c.id)) {
+              c.mesh.material = c.originalMats;
+            } else {
+              c.mesh.material = grayMats;
+            }
+          }
+        }
+
+        isSolved() {
+          return this.cubies.every(c =>
+            c.x === c.ox && c.y === c.oy && c.z === c.oz &&
+            (Math.abs(c.q.w - 1) < 1e-5 || Math.abs(c.q.w + 1) < 1e-5)
+          );
+        }
+
+        pieceType(c) {
+          const stickers = c.faceColors.filter(fc => fc !== 'core').length;
+          return stickers === 2 ? 'edge' : stickers === 3 ? 'corner' : 'center';
+        }
+
+        /* ============================================================
+         * 手动标注机制（开发协作用，最终页面不暴露标注工具）
+         * ------------------------------------------------------------
+         * 规则：每个 STEPS[i].highlight 字段即为一个「标注」。
+         * 颜色编码：U=白 D=黄 L=橙 R=红 F=绿 B=蓝，与 COLORS 常量一致。
+         * 识别方式：由本方法 parseHighlight(highlight) 解析并返回应保留原色的 cubie id 集合。
+         * 映射实现：App.loadStep() 中调用
+         *          cube.setHighlight(cube.findHighlightIds(step.highlight), cube.findHighlightFaceMap(step.highlight))
+         *          将标注结果渲染为「关键色块/面原色，其余灰显」。
+         * 字段格式：
+         *   { type: 'all' }                         — 全部原色
+         *   { type: 'color',  colors: ['U'] }     — 包含任一指定颜色的块（整 cubie 高亮）
+         *   { type: 'colors', colors: ['D','F'], piece: 'edge' }
+         *                                           — 同时包含 D 和 F 的边块（整 cubie 高亮）
+         *   piece 可选：'edge'/'corner'/'center'，用于精确限定块类型。
+         *   { type: 'face-color', colors: ['U'], piece: 'edge' }
+         *                                           — 仅高亮边块上颜色为 U 的那个面，其余面灰色
+         *   { type: 'face-colors', colors: ['U','R'], piece: 'corner' }
+         *                                           — 仅高亮角块上颜色为 U、R 的两个面，第三个面灰色
+         *   面级规则可加 with: ['R','B'] 限定目标块必须同时含有这些颜色：
+         *   { type: 'face-color', colors: ['D'], with: ['R','B'], piece: 'corner' }
+         *                                           — 只选「黄红蓝」角块，并仅高亮它的黄色面
+         *   { type: 'union', rules: [ ... ] }      — 多个规则取并集
+         * ============================================================ */
+
+        // 判断一个规则是否属于「面级高亮」
+        _isFaceRule(highlight) {
+          if (!highlight) return false;
+          if (highlight.type === 'union') return true; // union 可能含面级规则，统一按面级处理
+          return highlight.type === 'face-color' || highlight.type === 'face-colors';
+        }
+
+        // 返回需要整 cubie 高亮的 id 集合
+        findHighlightIds(highlight) {
+          if (!highlight) return [];
+          if (highlight.type === 'all') return [];
+          if (highlight.type === 'union') {
+            const set = new Set();
+            for (const rule of highlight.rules || []) {
+              this.findHighlightIds(rule).forEach(id => set.add(id));
+            }
+            return Array.from(set);
+          }
+          const ids = [];
+          for (const c of this.cubies) {
+            const p = this.pieceType(c);
+            if (highlight.piece && p !== highlight.piece) continue;
+            if (highlight.type === 'color') {
+              if (highlight.colors.some(col => c.faceColors.includes(col))) ids.push(c.id);
+            } else if (highlight.type === 'colors') {
+              if (highlight.colors.every(col => c.faceColors.includes(col))) ids.push(c.id);
+            } else if (highlight.type === 'face-color' || highlight.type === 'face-colors') {
+              // 面级规则也先让匹配的 cubie 进入 activeSet，后续 faceMap 再细化到面
+              const check = highlight.type === 'face-color' ? 'some' : 'every';
+              if (highlight.with && !highlight.with.every(col => c.faceColors.includes(col))) continue;
+              if (highlight.colors[check](col => c.faceColors.includes(col))) ids.push(c.id);
+            }
+          }
+          return ids;
+        }
+
+        // 返回面级高亮映射：{ 'x,y,z': Set<faceIndex>, ... }
+        // 只有 face-color / face-colors 规则才会产生映射；块级规则不产生。
+        findHighlightFaceMap(highlight) {
+          if (!highlight) return {};
+          if (highlight.type === 'all') return {};
+          if (highlight.type === 'union') {
+            const map = {};
+            for (const rule of highlight.rules || []) {
+              const sub = this.findHighlightFaceMap(rule);
+              for (const id in sub) {
+                if (!map[id]) map[id] = new Set();
+                sub[id].forEach(i => map[id].add(i));
+              }
+            }
+            return map;
+          }
+          if (highlight.type !== 'face-color' && highlight.type !== 'face-colors') return {};
+          const map = {};
+          const check = highlight.type === 'face-color' ? 'some' : 'every';
+          for (const c of this.cubies) {
+            const p = this.pieceType(c);
+            if (highlight.piece && p !== highlight.piece) continue;
+            if (highlight.with && !highlight.with.every(col => c.faceColors.includes(col))) continue;
+            if (!highlight.colors[check](col => c.faceColors.includes(col))) continue;
+            const set = new Set();
+            for (let i = 0; i < c.faceColors.length; i++) {
+              if (highlight.colors.includes(c.faceColors[i])) set.add(i);
+            }
+            if (set.size > 0) map[c.id] = set;
+          }
+          return map;
+        }
+
+        // 动画复位：所有 cubie 平滑回到初始位置/朝向
+        async animateReset(duration) {
+          if (this.animating) return Promise.resolve();
+          this.animating = true;
+          duration = duration || 350;
+          const startPos = this.cubies.map(c => ({ x: c.x, y: c.y, z: c.z }));
+          const startQ = this.cubies.map(c => c.q.clone());
+          const grayMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5 });
+          const grayMats = [grayMat, grayMat, grayMat, grayMat, grayMat, grayMat];
+
+          await new Promise(resolve => {
+            const startTime = performance.now();
+            const tick = (now) => {
+              const t = Math.min((now - startTime) / duration, 1);
+              const et = 1 - Math.pow(1 - t, 3);
+              for (let i = 0; i < this.cubies.length; i++) {
+                const c = this.cubies[i];
+                c.mesh.position.set(
+                  startPos[i].x + (c.ox - startPos[i].x) * et,
+                  startPos[i].y + (c.oy - startPos[i].y) * et,
+                  startPos[i].z + (c.oz - startPos[i].z) * et
+                );
+                c.mesh.quaternion.slerpQuaternions(startQ[i], new THREE.Quaternion(), et);
+              }
+              if (t < 1) {
+                requestAnimationFrame(tick);
+              } else {
+                for (const c of this.cubies) {
+                  c.x = c.ox; c.y = c.oy; c.z = c.oz;
+                  c.q.identity();
+                  c.mesh.material = c.originalMats;
+                  this.updateMesh(c);
+                }
+                this.animating = false;
+                resolve();
+              }
+            };
+            requestAnimationFrame(tick);
+          });
+        }
+
+        isInLayer(c, face) {
+          if (face === 'U') return c.y === 1;
+          if (face === 'D') return c.y === -1;
+          if (face === 'L') return c.x === -1;
+          if (face === 'R') return c.x === 1;
+          if (face === 'F') return c.z === 1;
+          if (face === 'B') return c.z === -1;
+          return false;
+        }
+
+        // 动画执行一次转动
+        animateMove(face, dir, steps, duration) {
+          if (this.animating) return Promise.resolve();
+          this.animating = true;
+          duration = duration || 420;
+          const layer = this.cubies.filter(c => this.isInLayer(c, face));
+          const axisVec = new THREE.Vector3(...AXIS[face]);
+          const angle = DIR[face] * dir * steps * Math.PI / 2;
+          const q = new THREE.Quaternion().setFromAxisAngle(axisVec, angle);
+
+          const startPos = layer.map(c => new THREE.Vector3(c.x, c.y, c.z));
+          const startQ = layer.map(c => c.q.clone());
+          // 目标状态与 applyInstant 完全一致：先绕世界轴转 q，再叠加原朝向
+          const targetPos = layer.map(c => {
+            const v = new THREE.Vector3(c.x, c.y, c.z);
+            v.applyQuaternion(q);
+            return v;
+          });
+          const targetQ = layer.map(c => c.q.clone().premultiply(q));
+
+          return new Promise(resolve => {
+            const startTime = performance.now();
+            const tick = (now) => {
+              const t = Math.min((now - startTime) / duration, 1);
+              const et = 1 - Math.pow(1 - t, 3); // easeOutCubic
+              for (let i = 0; i < layer.length; i++) {
+                const c = layer[i];
+                c.mesh.position.lerpVectors(startPos[i], targetPos[i], et);
+                c.mesh.quaternion.slerpQuaternions(startQ[i], targetQ[i], et);
+              }
+              if (t < 1) {
+                requestAnimationFrame(tick);
+              } else {
+                for (let i = 0; i < layer.length; i++) {
+                  const c = layer[i];
+                  const v = targetPos[i];
+                  c.x = Math.round(v.x);
+                  c.y = Math.round(v.y);
+                  c.z = Math.round(v.z);
+                  c.q.copy(targetQ[i]);
+                  this.updateMesh(c);
+                }
+                this.animating = false;
+                resolve();
+              }
+            };
+            requestAnimationFrame(tick);
+          });
+        }
+
+        // 瞬间执行一次转动（用于重置到 setup 状态）
+        applyInstant(face, dir, steps) {
+          const axisVec = new THREE.Vector3(...AXIS[face]);
+          const angle = DIR[face] * dir * steps * Math.PI / 2;
+          const q = new THREE.Quaternion().setFromAxisAngle(axisVec, angle);
+          for (const c of this.cubies) {
+            if (this.isInLayer(c, face)) {
+              const v = new THREE.Vector3(c.x, c.y, c.z);
+              v.applyQuaternion(q);
+              c.x = Math.round(v.x);
+              c.y = Math.round(v.y);
+              c.z = Math.round(v.z);
+              c.q.premultiply(q);
+              this.updateMesh(c);
+            }
+          }
+        }
+
+        flipView() {
+          // 动画翻转：绕世界 X 轴旋转 180°，实现顶面与底面互换（例如白色中心从顶面到底面）。
+          // 使用球面插值保持相机到原点距离不变，因此不会出现直线插值导致的「先放大后旋转」现象。
+          const startPos = this.camera.position.clone();
+          const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);
+          const startQ = new THREE.Quaternion();
+          const duration = 450;
+          const startTime = performance.now();
+          return new Promise(resolve => {
+            const tick = (now) => {
+              const t = Math.min((now - startTime) / duration, 1);
+              const et = 1 - Math.pow(1 - t, 3);
+              const curQ = new THREE.Quaternion().slerpQuaternions(startQ, q, et);
+              this.camera.position.copy(startPos).applyQuaternion(curQ);
+              this.controls.spherical.setFromVector3(this.camera.position);
+              this.controls.update();
+              if (t < 1) requestAnimationFrame(tick);
+              else resolve();
+            };
+            requestAnimationFrame(tick);
+          });
+        }
+
+        resize() {
+          const rect = this.container.getBoundingClientRect();
+          const w = rect.width || 1;
+          const h = rect.height || 1;
+          this.camera.aspect = w / h;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(w, h);
+        }
+
+        animate() {
+          requestAnimationFrame(() => this.animate());
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+
+      /* ============================================================
+       * 五、应用控制器
+       * ============================================================ */
+      class App {
+        constructor() {
+          this.cube = new Cube3D(document.getElementById('canvas-container'));
+          this.curIdx = 0;
+          this.state = 'intro'; // intro / setup / ready / playing / paused / done
+          this.moves = [];
+          this.moveIdx = -1;
+          this.auto = false;
+          this.busy = false;
+
+          this.els = {
+            phaseNav: document.getElementById('phase-nav'),
+            phaseTag: document.getElementById('phase-tag'),
+            stepTitle: document.getElementById('step-title'),
+            stepGoal: document.getElementById('step-goal'),
+            stepScene: document.getElementById('step-scene'),
+            judgeBlock: document.getElementById('judge-block'),
+            stepJudge: document.getElementById('step-judge'),
+            formulaChips: document.getElementById('formula-chips'),
+            basicMovesPanel: document.getElementById('basic-moves-panel'),
+            basicMovesGrid: document.getElementById('basic-moves-grid'),
+            stepTips: document.getElementById('step-tips'),
+            stepList: document.getElementById('step-list'),
+            btnPlay: document.getElementById('btn-play'),
+            btnPrevStep: document.getElementById('btn-prev-step'),
+            btnNextStep: document.getElementById('btn-next-step'),
+            btnPrevMove: document.getElementById('btn-prev-move'),
+            btnNextMove: document.getElementById('btn-next-move'),
+            btnReset: document.getElementById('btn-reset'),
+            btnFlip: document.getElementById('btn-flip'),
+            btnAuto: document.getElementById('btn-auto'),
+            moveIndicator: document.getElementById('move-indicator'),
+            toast: document.getElementById('toast')
+          };
+
+          this.renderPhaseNav();
+          this.bindEvents();
+          this.loadStep(0, { autoSetup: true });
+        }
+
+        renderPhaseNav() {
+          this.els.phaseNav.innerHTML = '';
+          PHASES.forEach(p => {
+            const btn = document.createElement('button');
+            btn.className = 'phase-btn';
+            btn.innerHTML = `<span class="phase-name">${p.name}</span><span class="phase-summary">${p.summary}</span>`;
+            btn.onclick = () => {
+              const first = STEPS.findIndex(s => s.phase === p.id);
+              if (first >= 0) this.loadStep(first, { autoSetup: true });
+            };
+            this.els.phaseNav.appendChild(btn);
+          });
+          this.updatePhaseNav();
+        }
+
+        updatePhaseNav() {
+          const curPhase = STEPS[this.curIdx].phase;
+          const btns = this.els.phaseNav.querySelectorAll('.phase-btn');
+          btns.forEach((btn, i) => {
+            const pid = PHASES[i].id;
+            btn.classList.toggle('active', pid === curPhase);
+          });
+        }
+
+        bindEvents() {
+          this.els.btnPlay.onclick = () => this.onPlayClick();
+          this.els.btnPrevStep.onclick = () => this.prevStep();
+          this.els.btnNextStep.onclick = () => this.nextStep();
+          this.els.btnPrevMove.onclick = () => this.prevMove();
+          this.els.btnNextMove.onclick = () => this.nextMove();
+          this.els.btnReset.onclick = () => {
+            this.cube.reset();
+            this.cube.resetCamera();
+            this.loadStep(this.curIdx, { autoSetup: true });
+          };
+          this.els.btnFlip.onclick = () => this.cube.flipView();
+          this.els.btnAuto.onclick = () => this.toggleAuto();
+        }
+
+        showToast(msg) {
+          const t = this.els.toast;
+          t.textContent = msg;
+          t.classList.add('show');
+          setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        // 加载第 i 个教学步骤
+        async loadStep(i, opts) {
+          opts = opts || {};
+          if (this.busy) return;
+          this.curIdx = i;
+          const step = STEPS[i];
+          this.moves = parseMoves(step.moves);
+          this.moveIdx = -1;
+          this.state = 'intro';
+          this.auto = opts.auto || this.auto;
+
+          // 进入每一步之前强制重置魔方和镜头，确保状态干净一致
+          this.cube.reset();
+          this.cube.resetCamera();
+
+          // 阶段 4 起整体翻转魔方，使白色面固定到底面，公式本身保持不变
+          if (step.phase >= 4) {
+            this.cube.reorient(new THREE.Vector3(1, 0, 0), Math.PI);
+          }
+
+          const setupMoves = parseMoves(step.setup);
+          for (const m of setupMoves) {
+            this.cube.applyInstant(m.face, m.dir, m.steps);
+          }
+
+          if (setupMoves.length > 0) {
+            this.state = 'ready';
+          } else if (this.moves.length === 0) {
+            this.state = 'done';
+          } else {
+            this.state = 'ready';
+          }
+
+          // 高亮关键色块/面：按步骤目标仅高亮相关目标色块或色块上的指定颜色面，其余变灰
+          const highlightIds = this.cube.findHighlightIds(step.highlight);
+          const highlightFaceMap = this.cube.findHighlightFaceMap(step.highlight);
+          this.cube.setHighlight(highlightIds, highlightFaceMap);
+
+          this.renderLesson();
+          this.updateButtons();
+
+          // 阶段 4 起已通过整体重定向让黄色面朝上，无需再翻转相机
+
+          if (opts.autoSetup && this.moves.length > 0 && this.auto && this.state === 'ready') {
+            setTimeout(() => this.playAll(), 600);
+          }
+        }
+
+        renderLesson() {
+          const step = STEPS[this.curIdx];
+          const phase = PHASES.find(p => p.id === step.phase);
+
+          this.els.phaseTag.textContent = `阶段 ${step.phase} · ${phase.name}`;
+          this.els.stepTitle.textContent = step.title;
+          this.els.stepGoal.textContent = step.goal;
+          this.els.stepScene.textContent = step.scene;
+
+          if (step.judge) {
+            this.els.judgeBlock.style.display = 'block';
+            this.els.stepJudge.innerHTML = step.judge;
+          } else {
+            this.els.judgeBlock.style.display = 'none';
+          }
+
+          // 公式 chips
+          this.els.formulaChips.innerHTML = '';
+          if (this.moves.length === 0) {
+            const span = document.createElement('span');
+            span.className = 'chip';
+            span.textContent = '—';
+            this.els.formulaChips.appendChild(span);
+          } else {
+            this.moves.forEach((m, idx) => {
+              const chip = document.createElement('span');
+              chip.className = 'chip pending';
+              chip.textContent = formatMove(m);
+              chip.dataset.idx = idx;
+              chip.onclick = () => this.jumpToMove(idx);
+              this.els.formulaChips.appendChild(chip);
+            });
+          }
+
+          // 基本转法按钮（仅在公式基础阶段显示）
+          this.els.basicMovesPanel.classList.toggle('active', step.phase === 1);
+          if (step.phase === 1) {
+            this.els.basicMovesGrid.innerHTML = '';
+            BASIC_MOVES.forEach(bm => {
+              const btn = document.createElement('button');
+              btn.className = 'basic-move-btn';
+              btn.innerHTML = `<div>${bm.label}</div><div style="font-size:10px;font-weight:400;color:var(--muted);">${bm.desc}</div>`;
+              btn.onclick = () => this.demoBasicMove(bm);
+              this.els.basicMovesGrid.appendChild(btn);
+            });
+          }
+
+          // 分步讲解
+          this.els.stepTips.innerHTML = '';
+          step.tips.forEach(tip => {
+            const li = document.createElement('li');
+            li.textContent = tip;
+            this.els.stepTips.appendChild(li);
+          });
+
+          // 当前阶段步骤列表
+          this.els.stepList.innerHTML = '';
+          STEPS.filter(s => s.phase === step.phase).forEach(s => {
+            const item = document.createElement('div');
+            item.className = 'step-item';
+            if (s.id === step.id) item.classList.add('active');
+            item.innerHTML = `<span>${s.title}</span>`;
+            item.onclick = () => {
+              const idx = STEPS.findIndex(x => x.id === s.id);
+              this.loadStep(idx, { autoSetup: true });
+            };
+            this.els.stepList.appendChild(item);
+          });
+
+          this.updatePhaseNav();
+          this.updateMoveIndicator();
+        }
+
+        updateMoveIndicator() {
+          if (this.moves.length === 0) {
+            this.els.moveIndicator.textContent = '无公式';
+          } else {
+            this.els.moveIndicator.textContent = `公式 ${this.moveIdx + 1} / ${this.moves.length}`;
+          }
+        }
+
+        updateButtons() {
+          this.els.btnPlay.textContent = this.state === 'playing' ? '⏸ 暂停' : '▶ 播放';
+          this.els.btnPrevStep.disabled = this.curIdx === 0;
+          this.els.btnNextStep.disabled = this.curIdx === STEPS.length - 1;
+          this.els.btnPrevMove.disabled = this.moveIdx < 0 || this.moves.length === 0;
+          this.els.btnNextMove.disabled = this.moveIdx >= this.moves.length - 1 || this.moves.length === 0;
+          this.els.btnAuto.classList.toggle('success', this.auto);
+          this.els.btnAuto.textContent = this.auto ? '⟲ 自动中' : '⟲ 自动';
+
+          // chips 高亮：当前步深绿色，已完成浅绿色
+          const chips = this.els.formulaChips.querySelectorAll('.chip');
+          chips.forEach((chip, idx) => {
+            chip.classList.remove('current', 'done');
+            if (idx < this.moveIdx) chip.classList.add('done');
+            if (idx === this.moveIdx && this.moveIdx >= 0) chip.classList.add('current');
+          });
+
+          // 公式指示器高亮
+          this.els.moveIndicator.classList.toggle('active', this.moveIdx >= 0 && this.moves.length > 0);
+        }
+
+        async onPlayClick() {
+          if (this.state === 'playing') {
+            this.state = 'paused';
+            this.updateButtons();
+            return;
+          }
+          if (this.state === 'paused') {
+            this.state = 'playing';
+            this.updateButtons();
+            this.playAll();
+            return;
+          }
+          if (this.moves.length === 0) {
+            this.showToast('本步为观察讲解，无需播放公式');
+            return;
+          }
+          if (this.state === 'done') {
+            if (this.cube.animating) return;
+            this.loadStep(this.curIdx, { autoSetup: true });
+            setTimeout(() => this.onPlayClick(), 300);
+            return;
+          }
+          this.state = 'playing';
+          this.updateButtons();
+          this.playAll();
+        }
+
+        async playAll() {
+          if (this.busy) return;
+          this.busy = true;
+          while (this.state === 'playing' && this.moveIdx < this.moves.length - 1) {
+            await this.advanceOne();
+          }
+          if (this.moveIdx >= this.moves.length - 1 && this.state === 'playing') {
+            this.state = 'done';
+            this.updateButtons();
+            this.renderLesson();
+            if (this.auto) {
+              if (this.curIdx < STEPS.length - 1) {
+                setTimeout(() => this.loadStep(this.curIdx + 1, { autoSetup: true, auto: true }), 700);
+              } else {
+                this.auto = false;
+                this.showToast('全部步骤演示完成！');
+                this.updateButtons();
+              }
+            } else {
+              this.showToast('本步完成，点击「下一步」继续');
+            }
+          }
+          this.busy = false;
+        }
+
+        // 阶段1：演示单个基本转法；若魔方/镜头不在初始状态，直接瞬间复位
+        async demoBasicMove(bm) {
+          if (this.cube.animating) return;
+          if (!this.cube.isSolved()) {
+            this.cube.reset();
+          }
+          this.cube.resetCamera();
+          await new Promise(r => setTimeout(r, 100));
+          this.cube.setHighlight([]);
+          this.state = 'intro';
+          this.updateButtons();
+          await this.cube.animateMove(bm.face, bm.dir, bm.steps, 400);
+        }
+
+        // 点击公式 chip，魔方瞬间跳到该步之后的状态
+        async jumpToMove(targetIdx) {
+          if (this.busy || this.cube.animating || targetIdx < 0 || targetIdx >= this.moves.length) return;
+          const step = STEPS[this.curIdx];
+          this.cube.reset();
+          if (step.phase >= 4) {
+            this.cube.reorient(new THREE.Vector3(1, 0, 0), Math.PI);
+          }
+          const setupMoves = parseMoves(step.setup);
+          for (const m of setupMoves) this.cube.applyInstant(m.face, m.dir, m.steps);
+          const highlightIds = this.cube.findHighlightIds(step.highlight);
+          const highlightFaceMap = this.cube.findHighlightFaceMap(step.highlight);
+          this.cube.setHighlight(highlightIds, highlightFaceMap);
+          for (let i = 0; i <= targetIdx; i++) {
+            const m = this.moves[i];
+            this.cube.applyInstant(m.face, m.dir, m.steps);
+          }
+          this.moveIdx = targetIdx;
+          this.state = 'paused';
+          this.updateMoveIndicator();
+          this.updateButtons();
+        }
+
+        async advanceOne() {
+          if (this.moveIdx >= this.moves.length - 1) return;
+          this.moveIdx++;
+          this.updateMoveIndicator();
+          this.updateButtons();
+          const m = this.moves[this.moveIdx];
+          await this.cube.animateMove(m.face, m.dir, m.steps, 380);
+        }
+
+        async backOne() {
+          if (this.moveIdx < 0) return;
+          const m = this.moves[this.moveIdx];
+          // 反向转动
+          await this.cube.animateMove(m.face, -m.dir, m.steps === 2 ? 2 : 1, 380);
+          this.moveIdx--;
+          this.updateMoveIndicator();
+          this.updateButtons();
+        }
+
+        async nextMove() {
+          if (this.cube.animating) return;
+          if (this.state === 'done') {
+            this.loadStep(this.curIdx, { autoSetup: true });
+            return;
+          }
+          if (this.state === 'playing') {
+            // 播放中不允许单步
+            return;
+          }
+          if (this.moveIdx >= this.moves.length - 1) return;
+          this.state = 'paused';
+          this.updateButtons();
+          await this.advanceOne();
+        }
+
+        async prevMove() {
+          if (this.cube.animating || this.state === 'playing') return;
+          if (this.moveIdx < 0) return;
+          this.state = 'paused';
+          this.updateButtons();
+          await this.backOne();
+        }
+
+        prevStep() {
+          if (this.curIdx > 0) {
+            this.loadStep(this.curIdx - 1, { autoSetup: true });
+          }
+        }
+
+        nextStep() {
+          if (this.curIdx < STEPS.length - 1) this.loadStep(this.curIdx + 1, { autoSetup: true });
+          else this.showToast('已经是最后一步了');
+        }
+
+        toggleAuto() {
+          this.auto = !this.auto;
+          this.updateButtons();
+          if (this.auto) {
+            if (this.state === 'done' && this.curIdx < STEPS.length - 1) {
+              this.loadStep(this.curIdx + 1, { autoSetup: true, auto: true });
+            } else if (this.state === 'ready' || this.state === 'intro') {
+              this.onPlayClick();
+            } else {
+              this.showToast('已开启自动播放');
+            }
+          } else {
+            this.showToast('已关闭自动播放');
+          }
+        }
+      }
+
+      /* ============================================================
+       * 六、启动
+       * ============================================================ */
+      document.addEventListener('DOMContentLoaded', () => {
+        window.app = new App();
+      });
+    })();
+  </script>
+  <script>
+    // PWA: 注册 service worker 实现离线缓存（仅在 https 或 localhost 下生效；file:// 下静默跳过）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

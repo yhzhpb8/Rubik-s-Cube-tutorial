@@ -1,0 +1,17 @@
+{
+  "name": "魔方复原教学器",
+  "short_name": "魔方教学",
+  "description": "跟着 6 个公式，零基础还原三阶魔方",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "assets/favicon-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+    { "src": "assets/favicon-16.png", "sizes": "16x16", "type": "image/png", "purpose": "any" }
+  ]
+}
